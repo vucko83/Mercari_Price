@@ -1,4 +1,5 @@
 library(data.table)
+library(caret)
 
 mercari.data.train <- fread('../../../train.tsv', sep='\t')
 
@@ -26,5 +27,20 @@ apply(X = mercari.data.train[, c("name", "category_name", "brand_name", "item_de
       MARGIN = 2,
       FUN = function(x) length(which(x == "")))
 
-# making secong baseline submission
+# Creating train and test subsets
+set.seed(69)
 
+train.indices <- createDataPartition(y = mercari.data.train$price, 
+                                     p = .8, 
+                                     list = FALSE)
+
+train.data <- mercari.data.train[train.indices, ]
+test.data <- mercari.data.train[-train.indices, ]
+
+# making secong baseline submission
+baseline.lm <- lm(formula = price ~ item_condition_id + shipping, data = train.data)
+
+baseline.pred <- predict(object = baseline.lm, newdata = test.data)
+head(baseline.pred)
+
+##### TO DO: test error on these predictions
