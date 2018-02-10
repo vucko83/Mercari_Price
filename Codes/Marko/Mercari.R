@@ -1,7 +1,9 @@
 library(data.table)
 library(caret)
+library(MLmetrics)
 
 mercari.data.train <- fread('../../../train.tsv', sep='\t')
+mercari.data.test <- fread('../../../test.tsv', sep='\t')
 
 sample.submision <- fread('../../../sample_submission.csv', sep=',')
 
@@ -9,11 +11,27 @@ str(mercari.data.train)
 
 summary(mercari.data.train)
 
+
+
 #-----------------------------------------------------------------------------------
 #---------------- BASELINE MODELS --------------------------------------------------
 
+# Creating train and test subsets
+set.seed(69)
+
+train.indices <- createDataPartition(y = mercari.data.train$price, 
+                                     p = .8, 
+                                     list = FALSE)
+
+train.data <- mercari.data.train[train.indices, ]
+test.data <- mercari.data.train[-train.indices, ]
+
+
 # Making a baseline submission
-mean(mercari.data.train$price)
+mean.mercari.price <- mean(train.data$price)
+
+# Evaluation of baseline model
+rmsle.baseline.model <- RMSLE(y_pred = mean.mercari.price, y_true = test.data$price)
 
 write.csv(sample.submision, file = "../../../baseline.submission.csv", row.names = FALSE)
 
@@ -35,26 +53,34 @@ apply(X = mercari.data.train[, c("name", "category_name", "brand_name", "item_de
       MARGIN = 2,
       FUN = function(x) length(which(x == " ")))
 
-# Creating train and test subsets
-set.seed(69)
 
-train.indices <- createDataPartition(y = mercari.data.train$price, 
-                                     p = .8, 
-                                     list = FALSE)
 
-train.data <- mercari.data.train[train.indices, ]
-test.data <- mercari.data.train[-train.indices, ]
+#----------------------------------------------------------------------------#
+#------------- Making second baseline submission ----------------------------#
 
-# making secong baseline submission
-baseline.lm <- lm(formula = price ~ item_condition_id + shipping, data = train.data)
+# baseline linear regression model
+baseline.linear.model <- lm(formula = price ~ item_condition_id + shipping, data = train.data)
 
-baseline.pred <- predict(object = baseline.lm, newdata = test.data)
+# making prediction on subseted test data
+baseline.pred <- predict(object = baseline.linear.model, newdata = test.data)
 head(baseline.pred)
 
-##### TO DO: make file with baseline prediction using linear regression model!!!
-##### TO DO: test error on these predictions
+# making predictions on mercuri test data, using baseline linear regression model
+baseline.linear.model.pred <- predict(object = baseline.lm, newdata = mercari.data.test)
 
+# making data frame out of test_id and baseline linear regression model predictions
+baseline.linear.model.submission <- cbind(mercari.data.test$test_id, baseline.linear.model.pred)
 
+column.names <- c("test_id", "price")
+
+baseline.linear.model.submission <- as.data.frame(x = baseline.linear.model.submission)
+
+colnames(x = baseline.linear.model.submission) <- column.names
+
+write.csv(baseline.linear.model.submission, file = "../../../baseline.linear.model.submission.csv", row.names = FALSE)
+
+# Evaluation of baseline linear regression model
+rmsle.baseline.linear.model <- RMSLE(y_pred = baseline.pred, y_true = test.data$price)
 
 
 #-----------------------------------------------------------------------------------
