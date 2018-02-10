@@ -113,3 +113,25 @@ summary(mercari.data.train$price)
 # - raspodela cena proizvoda je asimetricna udesno
 # - cene proizvoda se gomilaju na levo, ka 0
 # - prirodni logaritam (cena + 1) centriran je oko 3, i ima veci raspon vrednosti ka desnoj strani, pre svega zbog ogranicenja od 0 sa leve strane
+
+
+
+
+# Variable:   Item condition
+
+table(mercari.data.train$item_condition_id)
+
+prop.table(table(mercari.data.train$item_condition_id)) * 100
+
+ggplot(data = mercari.data.train, mapping = aes(item_condition_id)) +
+  geom_histogram()
+
+ggplot(data = mercari.data.train, mapping = aes(x = item_condition_id, y = price)) +
+  geom_boxplot()
+
+head(mercari.data.train$item_description[mercari.data.train$item_condition_id == 1])
+head(mercari.data.train$item_description[mercari.data.train$item_condition_id == 5])
+
+# After combining item_condition_id and item_description, I came to a conclusion that
+# items with item_condition_id == 1, are the new items, brand new items etc.
+# Items with item_condition_id == 5, are items that are damaged, out of order items...
